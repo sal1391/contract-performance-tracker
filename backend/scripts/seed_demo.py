@@ -26,14 +26,23 @@ def elapsed_pct(start: date, end: date, today: date) -> float:
 
 
 def target_actual(contracted: float, status: str, start: date, end: date, today: date) -> float:
-    """Total lifted tons that make a line show `status` on the dashboard today."""
+    """Total lifted tons that make a line show `status` on the dashboard today.
+
+    ON_TRACK is capped at 98% of contracted volume: past ~91% elapsed the raw
+    1.10x pace would exceed contracted and trip the AHEAD check instead. The
+    cap keeps pace >= contracted (0.98/elapsed >= 1.0 while elapsed <= 0.98)
+    yet stays under the AHEAD trigger, guaranteeing the status for any
+    elapsed value."""
     if status == "FUTURE":
         return 0.0
     if status == "COMPLETE":
         return round(contracted * 0.97, 1)
     if status == "AHEAD":
         return round(contracted * 1.06, 1)
-    return round(contracted * elapsed_pct(start, end, today) * PACE[status], 1)
+    computed = contracted * elapsed_pct(start, end, today) * PACE[status]
+    if status == "ON_TRACK":
+        return round(min(computed, contracted * 0.98), 1)
+    return round(computed, 1)
 
 
 def lift_schedule(start: date, end: date, today: date, total_tons: float) -> list[tuple[date, float]]:
