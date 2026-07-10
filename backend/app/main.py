@@ -37,6 +37,12 @@ def _run(job_name: str, fn) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if settings.demo_seed:
+        try:
+            from scripts.seed_demo import run_full_seed
+            run_full_seed()
+        except Exception:  # noqa: BLE001 — a seed failure must never block boot
+            log.exception("demo seed failed — continuing without demo data")
     if settings.scheduler_enabled:
         scheduler.add_job(lambda: _run("dimension_sync", refresh_dimensions),
                           "interval", seconds=settings.dimension_sync_interval, id="dimension_sync")
