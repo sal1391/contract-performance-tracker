@@ -91,9 +91,11 @@ if _static and _static.is_dir():
 
     @app.get("/{full_path:path}", include_in_schema=False)
     def spa_fallback(full_path: str):
-        if full_path == "api" or full_path.startswith(("api/", "admin")):
-            raise HTTPException(status_code=404)  # unknown API path stays a JSON 404
-        candidate = _static / full_path
-        if full_path and candidate.is_file():
-            return FileResponse(candidate)
+        if full_path in ("api", "admin") or full_path.startswith(("api/", "admin/")):
+            raise HTTPException(status_code=404)  # unknown API/admin path stays a JSON 404
+        if full_path:
+            candidate = (_static / full_path).resolve()
+            root = _static.resolve()
+            if candidate.is_file() and candidate.is_relative_to(root):
+                return FileResponse(candidate)
         return FileResponse(_static / "index.html")
