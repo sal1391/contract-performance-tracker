@@ -64,8 +64,9 @@ New setting in `config.py`: `demo_seed: bool = True`.
   1. `node:20-alpine`: `npm ci && npm run build` in `frontend/` → `dist/`.
   2. `python:3.12-slim`: install `backend/requirements.txt`, copy `backend/`, copy the
      built `dist/`, `CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}`.
-- **`main.py` additive change:** if the `dist/` directory exists (env var `STATIC_DIR`,
-  default checks the image path), mount static assets and add an SPA fallback route —
+- **`main.py` additive change:** new setting `static_dir: str = ""` (empty = SPA serving
+  disabled, which is the local-dev default; the Dockerfile sets `STATIC_DIR=/app/static`).
+  When set and the directory exists, mount static assets and add an SPA fallback route —
   any path not under `/api`, `/admin`, `/docs`, or `/healthz` returns `index.html`.
   Local dev (Vite proxy) is completely unaffected; no frontend code changes.
 - **Config normalization in `config.py`:** rewrite `postgres://` or `postgresql://`
