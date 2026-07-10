@@ -3,10 +3,13 @@ from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.admin import setup_admin
 from app.config import get_settings
@@ -79,3 +82,18 @@ setup_admin(app, engine)
 @app.get("/healthz")
 def healthz():
     return {"status": "ok", "env": settings.app_env}
+
+
+# --- Built-SPA serving (single-service deploys; off locally where Vite serves the UI) ---
+_static = Path(settings.static_dir) if settings.static_dir else None
+if _static and _static.is_dir():
+    app.mount("/assets", StaticFiles(directory=_static / "assets"), name="spa-assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def spa_fallback(full_path: str):
+        if full_path == "api" or full_path.startswith(("api/", "admin")):
+            raise HTTPException(status_code=404)  # unknown API path stays a JSON 404
+        candidate = _static / full_path
+        if full_path and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(_static / "index.html")
