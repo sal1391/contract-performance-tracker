@@ -1,12 +1,14 @@
 """FastAPI entrypoint: routers + sqladmin + the three scheduled data jobs (APScheduler)."""
 from __future__ import annotations
 
+import base64
 import logging
+import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -71,6 +73,28 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def demo_password_gate(request: Request, call_next):
+    """When DEMO_PASSWORD is set, require HTTP Basic auth for everything except the
+    health check. Keeps a public Railway demo from being world-open, with zero UI changes.
+    The password is shared; it does not replace per-user auth (that's Auth0, still pending)."""
+    password = settings.demo_password
+    if password and request.url.path != "/healthz":
+        header = request.headers.get("authorization", "")
+        supplied = None
+        if header.startswith("Basic "):
+            try:
+                decoded = base64.b64decode(header[6:]).decode("utf-8")
+                supplied = decoded.split(":", 1)[1] if ":" in decoded else decoded
+            except Exception:  # noqa: BLE001 — malformed header => treat as no credentials
+                supplied = None
+        if supplied is None or not secrets.compare_digest(supplied, password):
+            return Response(status_code=401,
+                            headers={"WWW-Authenticate": 'Basic realm="Triton Demo"'})
+    return await call_next(request)
+
 
 for r in (contracts.router, bid_lines.router, mapping.router, dimensions.router,
           dashboard.router, lifts.router, org.router, dev.router, accounts.router):
