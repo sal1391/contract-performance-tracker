@@ -4,6 +4,8 @@ One Railway service (API + UI in a single Docker image) + the Railway Postgres p
 On first boot the app creates its schema and seeds a full demo dataset automatically
 (`DEMO_SEED=true`), so the deployed URL lands on a populated dashboard.
 
+> ⚠️ **The deployed demo is unauthenticated and world-writable by design** (auth is off so the "Act as" switch works). Anyone with the URL can view, edit, and delete data, including via the open `/admin` UI. Don't put real data in it, treat the database as disposable, and avoid sharing the URL more widely than you need to. For a locked-down deployment, wire up Auth0 (`AUTH0_ENABLED=true`) and gate `/admin` — beyond this demo's scope.
+
 ## Steps (~5 minutes)
 
 1. **Create the project** — [railway.app](https://railway.app) → New Project.
@@ -19,6 +21,8 @@ On first boot the app creates its schema and seeds a full demo dataset automatic
    |---|---|---|
    | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | Reference to the plugin. The app rewrites the URL for its psycopg driver automatically. |
    | `DEMO_SEED` | `true` | Auto-seed schema + demo data on first boot. Optional (defaults to true). |
+
+   Set `DEMO_SEED=false` if you repurpose this image for real data (it's a no-op on a non-empty DB, but explicit is clearer).
 
    `PORT` is injected by Railway; `STATIC_DIR` is baked into the image. Nothing else is needed —
    auth stays off (`AUTH0_ENABLED` defaults to false), which is what enables the demo
