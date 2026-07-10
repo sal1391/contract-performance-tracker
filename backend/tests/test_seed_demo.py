@@ -60,3 +60,35 @@ def test_schedule_total_preserves_status_after_split():
         total = target_actual(4000.0, status, s, e, TODAY)
         summed = sum(t for _, t in lift_schedule(s, e, TODAY, total))
         assert expected_status(4000.0, summed, s, e, TODAY) == status, status
+
+
+from scripts.seed_demo import CONTRACTS
+
+
+def test_dataset_shape():
+    lines = [ls for cs in CONTRACTS for ls in cs.lines]
+    assert len(CONTRACTS) == 6
+    assert len(lines) == 12
+    by_status: dict[str, int] = {}
+    for ls in lines:
+        by_status[ls.status] = by_status.get(ls.status, 0) + 1
+    assert by_status == {"ON_TRACK": 3, "WATCH": 2, "AT_RISK": 2,
+                         "AHEAD": 2, "COMPLETE": 2, "FUTURE": 1}
+
+
+def test_every_line_spec_hits_its_target_status():
+    """The money test: generated lift totals land every line on its declared status."""
+    for cs in CONTRACTS:
+        for ls in cs.lines:
+            start = TODAY - timedelta(days=ls.back)
+            end = TODAY + timedelta(days=ls.ahead)
+            total = target_actual(ls.volume, ls.status, start, end, TODAY)
+            summed = sum(t for _, t in lift_schedule(start, end, TODAY, total))
+            want = "ON_TRACK" if ls.status == "FUTURE" else ls.status
+            assert expected_status(ls.volume, summed, start, end, TODAY) == want, (cs.source_id, ls.port)
+
+
+def test_line_uniqueness_per_contract():
+    for cs in CONTRACTS:
+        keys = [(ls.port, ls.grade, ls.supplier) for ls in cs.lines]
+        assert len(keys) == len(set(keys)), cs.source_id
