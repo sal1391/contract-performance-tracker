@@ -124,7 +124,8 @@ def seed_org(db) -> None:
     print("Seeded demo org tree (TridentFuel > Fuel Contracts > NA/EMEA/Cruise/Yacht > offices) + 5 MANUAL users.")
 
 
-def main() -> None:
+def create_schema() -> None:
+    """Create all tables, the pg_trgm extension (best effort), and the perf view."""
     Base.metadata.create_all(engine)
     try:
         with engine.begin() as conn:
@@ -134,48 +135,55 @@ def main() -> None:
     with engine.begin() as conn:
         conn.execute(text(PERF_VIEW_SQL))
 
+
+def seed_reference(db) -> None:
+    """Idempotent: org tree + lookups + dimensions + the 6 sample lifts."""
+    seed_org(db)
+    if db.query(m.LiftSource).first():
+        print("Reference data already present — skipping seed.")
+        return
+    db.add_all([
+        m.LkpPriceUom(code="MT", label="Metric Ton", sort_order=1),
+        m.LkpPriceUom(code="USG", label="US Gallon", sort_order=2),
+        m.LkpBidStatus(code="WON", label="Won", sort_order=1),
+        m.LkpBidStatus(code="LOST", label="Lost", sort_order=2),
+        m.LkpBidStatus(code="PENDING", label="Pending", sort_order=3),
+        m.LkpSupplyMethod(code="BARGE", label="Barge", sort_order=1),
+        m.LkpSupplyMethod(code="TRUCK", label="Truck", sort_order=2),
+        m.LkpSupplyMethod(code="PIPELINE", label="Pipeline", sort_order=3),
+        m.LkpFreightType(code="MTD", label="Month to date", sort_order=1),
+        m.LkpFreightType(code="MTW", label="Month to week", sort_order=2),
+        m.LkpPricingDays(code="PMA", label="Previous Month Average", sort_order=1),
+        m.LkpPricingDays(code="PWA", label="Prior Week Average", sort_order=2),
+        m.LkpPricingDays(code="DOD", label="Date of Delivery", sort_order=3),
+        m.DimIndex(symbol="FUEL01", index_name="FUEL 0.5% FOB BARGE INDEX"),
+        m.DimIndex(symbol="DSL01", index_name="ULSD 10PPM FOB CARGO INDEX"),
+        m.DimPort(port="NAPLES", region="EUROPE"),
+        m.DimPort(port="VENICE", region="EUROPE"),
+        m.DimPort(port="MIAMI", region="N.AMERICA"),
+        m.DimCustomer(customer_group_number="OCL01", customer_group_name="OCL"),
+        m.DimCustomer(customer_group_number="BWL01", customer_group_name="Bluewave Lines"),
+        m.DimSupplier(supplier_number="NRD", supplier_name="Nordfuel"),
+        m.DimSupplier(supplier_number="HBE", supplier_name="Harbor Energy"),
+        m.DimSupplier(supplier_number="PMR", supplier_name="Petromar"),
+        m.DimGrade(grade="VLSFO", grade_group="VLSFO"),
+        m.DimGrade(grade="MGO", grade_group="MGO"),
+        m.DimGrade(grade="HSFO", grade_group="HSFO"),
+    ])
+    for lift_id, cust, sup, port, grade, lift, tons, gp in LIFTS:
+        db.add(m.LiftSource(lift_id=lift_id, customer_group_number=cust, supplier_number=sup,
+                           port=port, grade=grade, lift_date=lift, volume_tons=tons, gp=gp))
+    db.commit()
+    print("Seeded reference data: lookups, dimensions, and 6 sample Lifts (lift_source).")
+    print("Now create a bid in the app: e.g. customer OCL01, line NAPLES / VLSFO / Nordfuel,")
+    print("contract 2026-01-01..2026-12-31, then Run auto-match to pull LIFT-1001 / LIFT-1002.")
+
+
+def main() -> None:
+    create_schema()
     db = SessionLocal()
     try:
-        seed_org(db)
-        if db.query(m.LiftSource).first():
-            print("Reference data already present — skipping seed.")
-            return
-
-        db.add_all([
-            m.LkpPriceUom(code="MT", label="Metric Ton", sort_order=1),
-            m.LkpPriceUom(code="USG", label="US Gallon", sort_order=2),
-            m.LkpBidStatus(code="WON", label="Won", sort_order=1),
-            m.LkpBidStatus(code="LOST", label="Lost", sort_order=2),
-            m.LkpBidStatus(code="PENDING", label="Pending", sort_order=3),
-            m.LkpSupplyMethod(code="BARGE", label="Barge", sort_order=1),
-            m.LkpSupplyMethod(code="TRUCK", label="Truck", sort_order=2),
-            m.LkpSupplyMethod(code="PIPELINE", label="Pipeline", sort_order=3),
-            m.LkpFreightType(code="MTD", label="Month to date", sort_order=1),
-            m.LkpFreightType(code="MTW", label="Month to week", sort_order=2),
-            m.LkpPricingDays(code="PMA", label="Previous Month Average", sort_order=1),
-            m.LkpPricingDays(code="PWA", label="Prior Week Average", sort_order=2),
-            m.LkpPricingDays(code="DOD", label="Date of Delivery", sort_order=3),
-            m.DimIndex(symbol="FUEL01", index_name="FUEL 0.5% FOB BARGE INDEX"),
-            m.DimIndex(symbol="DSL01", index_name="ULSD 10PPM FOB CARGO INDEX"),
-            m.DimPort(port="NAPLES", region="EUROPE"),
-            m.DimPort(port="VENICE", region="EUROPE"),
-            m.DimPort(port="MIAMI", region="N.AMERICA"),
-            m.DimCustomer(customer_group_number="OCL01", customer_group_name="OCL"),
-            m.DimCustomer(customer_group_number="BWL01", customer_group_name="Bluewave Lines"),
-            m.DimSupplier(supplier_number="NRD", supplier_name="Nordfuel"),
-            m.DimSupplier(supplier_number="HBE", supplier_name="Harbor Energy"),
-            m.DimSupplier(supplier_number="PMR", supplier_name="Petromar"),
-            m.DimGrade(grade="VLSFO", grade_group="VLSFO"),
-            m.DimGrade(grade="MGO", grade_group="MGO"),
-            m.DimGrade(grade="HSFO", grade_group="HSFO"),
-        ])
-        for lift_id, cust, sup, port, grade, lift, tons, gp in LIFTS:
-            db.add(m.LiftSource(lift_id=lift_id, customer_group_number=cust, supplier_number=sup,
-                               port=port, grade=grade, lift_date=lift, volume_tons=tons, gp=gp))
-        db.commit()
-        print("Seeded reference data: lookups, dimensions, and 6 sample Lifts (lift_source).")
-        print("Now create a bid in the app: e.g. customer OCL01, line NAPLES / VLSFO / Nordfuel,")
-        print("contract 2026-01-01..2026-12-31, then Run auto-match to pull LIFT-1001 / LIFT-1002.")
+        seed_reference(db)
     finally:
         db.close()
 
