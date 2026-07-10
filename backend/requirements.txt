@@ -1,0 +1,17 @@
+# Verified against PyPI on 2026-06-24 (see design doc "hallucination firewall").
+fastapi==0.138.0
+uvicorn[standard]==0.49.0
+pydantic==2.13.4
+pydantic-settings==2.14.2
+SQLAlchemy==2.0.51
+alembic==1.18.4
+psycopg[binary]==3.3.4
+sqladmin==0.27.2
+python-jose[cryptography]==3.5.0
+APScheduler==3.11.2
+
+# Snowflake driver is NOT needed for local dev — see requirements-snowflake.txt
+# (install it only on the Snowflake-connected machine).
+
+# dev/test
+pytest>=8,<9

@@ -1,0 +1,4 @@
+# Install ONLY on the Snowflake-connected machine (used by the matcher/dimension/intake/export
+# jobs). Not required for local dev. Install with:  pip install -r requirements-snowflake.txt
+snowflake-connector-python==4.6.0
+# snowflake-snowpark-python==1.52.0   # optional, if you prefer Snowpark over the connector

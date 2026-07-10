@@ -1,0 +1,39 @@
+# Claude Code / Maestro local state
+.claude/
+.maestro/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Node / frontend
+node_modules/
+dist/
+build/
+frontend/.vite/
+*.tsbuildinfo
+
+# Dev server logs
+*.log
+
+# Superpowers SDD scratch (ledger, task briefs, reports, review diffs)
+.superpowers/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Office lock/temp files
+~$*

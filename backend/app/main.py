@@ -1,0 +1,75 @@
+"""FastAPI entrypoint: routers + sqladmin + the three scheduled data jobs (APScheduler)."""
+from __future__ import annotations
+
+import logging
+from contextlib import asynccontextmanager
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.admin import setup_admin
+from app.config import get_settings
+from app.db import SessionLocal, engine
+from app.routers import accounts, bid_lines, contracts, dashboard, dev, dimensions, mapping, org, lifts
+from app.services.dimensions import refresh_dimensions
+from app.services.export import export_performance
+from app.services.matcher_runner import run_matcher
+from app.services.org_sync import sync_org_from_sales_planning
+
+log = logging.getLogger("contracts")
+settings = get_settings()
+scheduler = BackgroundScheduler()
+
+
+def _run(job_name: str, fn) -> None:
+    """Run a data job with its own session; Snowflake-less envs log and skip."""
+    db = SessionLocal()
+    try:
+        fn(db, sf_conn=None)  # TODO: pass a real Snowflake connection in prod
+    except (RuntimeError, NotImplementedError) as exc:
+        log.warning("job %s skipped: %s", job_name, exc)
+    except Exception:  # noqa: BLE001
+        log.exception("job %s failed", job_name)
+    finally:
+        db.close()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if settings.scheduler_enabled:
+        scheduler.add_job(lambda: _run("dimension_sync", refresh_dimensions),
+                          "interval", seconds=settings.dimension_sync_interval, id="dimension_sync")
+        scheduler.add_job(lambda: _run("matcher", run_matcher),
+                          "interval", seconds=settings.matcher_interval, id="matcher")
+        scheduler.add_job(lambda: _run("export", export_performance),
+                          "interval", seconds=settings.export_interval, id="export")
+        scheduler.add_job(lambda: _run("org_sync", sync_org_from_sales_planning),
+                          "interval", seconds=settings.org_sync_interval, id="org_sync")
+        scheduler.start()
+        log.info("scheduler started")
+    yield
+    if scheduler.running:
+        scheduler.shutdown(wait=False)
+
+
+app = FastAPI(title="Fuel Contract Tracker API", version="0.1.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origin_list,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+for r in (contracts.router, bid_lines.router, mapping.router, dimensions.router,
+          dashboard.router, lifts.router, org.router, dev.router, accounts.router):
+    app.include_router(r, prefix="/api")
+
+setup_admin(app, engine)
+
+
+@app.get("/healthz")
+def healthz():
+    return {"status": "ok", "env": settings.app_env}
