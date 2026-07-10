@@ -12,7 +12,7 @@ On first boot the app creates its schema and seeds a full demo dataset automatic
    - **GitHub:** "Create" → GitHub Repo → pick this repo (Railway detects `railway.json`
      and builds the Dockerfile), or
    - **CLI:** `npm i -g @railway/cli`, then from the repo root:
-     `railway login`, `railway init`, `railway up`.
+     `railway login`, `railway link` (select the project you created in step 1), `railway up`.
 4. **Set the app service variables** (service → Variables):
 
    | Variable | Value | Notes |
@@ -23,6 +23,10 @@ On first boot the app creates its schema and seeds a full demo dataset automatic
    `PORT` is injected by Railway; `STATIC_DIR` is baked into the image. Nothing else is needed —
    auth stays off (`AUTH0_ENABLED` defaults to false), which is what enables the demo
    "Act as" user switch.
+
+   > `${{Postgres.DATABASE_URL}}` and `railway connect postgres` (below) assume the plugin service
+   > is named **Postgres** (Railway's default from Create → Database → PostgreSQL); if you renamed it,
+   > substitute your service's name.
 5. **Expose it** — service → Settings → Networking → **Generate Domain**. Open the URL:
    the Dashboard should show populated risk tiles.
 
