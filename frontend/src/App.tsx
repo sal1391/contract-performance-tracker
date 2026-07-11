@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useAuth0 } from '@auth0/auth0-react'
 import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded'
 import EditNoteRoundedIcon from '@mui/icons-material/EditNoteRounded'
@@ -15,6 +16,7 @@ import Mapping from './pages/Mapping'
 import RiskLines from './pages/RiskLines'
 import Workbench from './pages/Workbench'
 import { getActAs, setActAs, useApi } from './api'
+import DemoGate, { demoGatePassed } from './ui/DemoGate'
 import { AppShell } from './ui/layout'
 
 type DevUser = { id: string; email: string; display_name: string | null; role_level: string }
@@ -120,6 +122,14 @@ function ActAsSwitcher() {
 export default function App() {
   const { isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0()
   const authConfigured = Boolean(import.meta.env.VITE_AUTH0_DOMAIN)
+
+  // Demo-mode-only email capture gate, shown before the Auth0 branch below. Auth0's flow is
+  // untouched when VITE_DEMO_MODE is unset — this state simply never renders.
+  const demoMode = Boolean(import.meta.env.VITE_DEMO_MODE)
+  const [demoGateOpen, setDemoGateOpen] = useState(demoMode && !demoGatePassed())
+  if (demoMode && demoGateOpen) {
+    return <DemoGate onPass={() => setDemoGateOpen(false)} />
+  }
 
   if (authConfigured && isLoading) return <Box sx={{ p: 4 }}>Loading...</Box>
   if (authConfigured && !isAuthenticated) {

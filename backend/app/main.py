@@ -14,7 +14,9 @@ from fastapi.staticfiles import StaticFiles
 from app.admin import setup_admin
 from app.config import get_settings
 from app.db import SessionLocal, engine
-from app.routers import accounts, bid_lines, contracts, dashboard, dev, dimensions, mapping, org, lifts
+from app.routers import (
+    accounts, bid_lines, contracts, dashboard, demo_gate, dev, dimensions, mapping, org, lifts,
+)
 from app.services.dimensions import refresh_dimensions
 from app.services.export import export_performance
 from app.services.matcher_runner import run_matcher
@@ -73,22 +75,27 @@ app.add_middleware(
 )
 
 _WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+# Exempt from the read-only guard: the auto-match action (so the mapping demo still works) and
+# the demo email gate (a write in name only — no seeded data is touched, and it must keep
+# working even when READ_ONLY locks down the rest of the API).
+_READ_ONLY_EXEMPT_SUFFIXES = ("/auto-match", "/demo/gate")
 
 
 @app.middleware("http")
 async def read_only_guard(request: Request, call_next):
     """Public-demo safety: when READ_ONLY is set, block data-changing requests so visitors
     can browse everything but not alter the seeded data. Reads (GET) stay fully open — no
-    login. The auto-match action is exempt so the mapping demo still works."""
+    login. The auto-match action and demo gate are exempt (see _READ_ONLY_EXEMPT_SUFFIXES)."""
     if (settings.read_only and request.method in _WRITE_METHODS
-            and not request.url.path.endswith("/auto-match")):
+            and not request.url.path.endswith(_READ_ONLY_EXEMPT_SUFFIXES)):
         return JSONResponse(status_code=403,
                             content={"detail": "This is a read-only demo — changes are disabled."})
     return await call_next(request)
 
 
 for r in (contracts.router, bid_lines.router, mapping.router, dimensions.router,
-          dashboard.router, lifts.router, org.router, dev.router, accounts.router):
+          dashboard.router, lifts.router, org.router, dev.router, accounts.router,
+          demo_gate.router):
     app.include_router(r, prefix="/api")
 
 setup_admin(app, engine)

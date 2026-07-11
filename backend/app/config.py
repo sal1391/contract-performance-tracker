@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     demo_seed: bool = True     # auto-seed demo data at startup when the DB is empty
     static_dir: str = ""       # built SPA dir; empty = disabled (local dev). Docker sets /app/static.
     read_only: bool = False    # public demo: block data-changing requests (auto-match still allowed)
+    demo_mode: bool = False    # public demo: frontend shows the email-capture gate (VITE_DEMO_MODE
+                                # is the frontend's copy of this flag — set both together)
 
     @field_validator("database_url", mode="before")
     @classmethod
