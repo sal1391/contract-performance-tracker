@@ -4,11 +4,10 @@ One Railway service (API + UI in a single Docker image) + the Railway Postgres p
 On first boot the app creates its schema and seeds a full demo dataset automatically
 (`DEMO_SEED=true`), so the deployed URL lands on a populated dashboard.
 
-> 🔒 **Set a `DEMO_PASSWORD`** (see the variables table) so the deployed demo isn't open to the world.
-> When set, the whole site — the app, `/admin`, and `/docs` — is behind one shared password (browser
-> HTTP Basic prompt); `/healthz` stays open for Railway's healthcheck. Everyone with the password shares
-> the same data and the open `/admin`, so still treat the database as disposable and don't put real data in it.
-> Per-user login (Auth0) remains a later phase.
+> 🛡️ **Set `READ_ONLY=true`** (see the variables table) for a shared public demo. The app opens
+> normally with no login and anyone can browse the full dataset, but create/edit/delete are blocked
+> so visitors can't alter or wipe the seeded data. The "Run auto-match" demo action stays enabled.
+> Leave it unset/false for a private, fully-editable deployment.
 
 ## Steps (~5 minutes)
 
@@ -25,7 +24,7 @@ On first boot the app creates its schema and seeds a full demo dataset automatic
    |---|---|---|
    | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | Reference to the plugin. The app rewrites the URL for its psycopg driver automatically. |
    | `DEMO_SEED` | `true` | Auto-seed schema + demo data on first boot. Optional (defaults to true). |
-   | `DEMO_PASSWORD` | your choice | Shared HTTP Basic password gating the whole demo; leave unset only for a throwaway/private deploy. |
+   | `READ_ONLY` | `true` | Blocks writes (except auto-match) so a shared demo can't be altered. Omit for a fully-editable deploy. |
 
    Set `DEMO_SEED=false` if you repurpose this image for real data (it's a no-op on a non-empty DB, but explicit is clearer).
 

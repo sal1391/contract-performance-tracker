@@ -1,16 +1,14 @@
 """FastAPI entrypoint: routers + sqladmin + the three scheduled data jobs (APScheduler)."""
 from __future__ import annotations
 
-import base64
 import logging
-import secrets
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from apscheduler.schedulers.background import BackgroundScheduler
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.admin import setup_admin
@@ -74,25 +72,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+_WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
 
 @app.middleware("http")
-async def demo_password_gate(request: Request, call_next):
-    """When DEMO_PASSWORD is set, require HTTP Basic auth for everything except the
-    health check. Keeps a public Railway demo from being world-open, with zero UI changes.
-    The password is shared; it does not replace per-user auth (that's Auth0, still pending)."""
-    password = settings.demo_password
-    if password and request.url.path != "/healthz":
-        header = request.headers.get("authorization", "")
-        supplied = None
-        if header.startswith("Basic "):
-            try:
-                decoded = base64.b64decode(header[6:]).decode("utf-8")
-                supplied = decoded.split(":", 1)[1] if ":" in decoded else decoded
-            except Exception:  # noqa: BLE001 — malformed header => treat as no credentials
-                supplied = None
-        if supplied is None or not secrets.compare_digest(supplied, password):
-            return Response(status_code=401,
-                            headers={"WWW-Authenticate": 'Basic realm="Triton Demo"'})
+async def read_only_guard(request: Request, call_next):
+    """Public-demo safety: when READ_ONLY is set, block data-changing requests so visitors
+    can browse everything but not alter the seeded data. Reads (GET) stay fully open — no
+    login. The auto-match action is exempt so the mapping demo still works."""
+    if (settings.read_only and request.method in _WRITE_METHODS
+            and not request.url.path.endswith("/auto-match")):
+        return JSONResponse(status_code=403,
+                            content={"detail": "This is a read-only demo — changes are disabled."})
     return await call_next(request)
 
 

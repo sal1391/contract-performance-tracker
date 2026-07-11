@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # Demo / static serving
     demo_seed: bool = True     # auto-seed demo data at startup when the DB is empty
     static_dir: str = ""       # built SPA dir; empty = disabled (local dev). Docker sets /app/static.
-    demo_password: str = ""    # when set, the whole app (except /healthz) requires HTTP Basic auth with this password
+    read_only: bool = False    # public demo: block data-changing requests (auto-match still allowed)
 
     @field_validator("database_url", mode="before")
     @classmethod
