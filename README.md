@@ -83,6 +83,13 @@ Snowflake-connected machine. Everything needed is in:
   matcher/intake/dimension/export logic, and the blocking data questions (§0).
   Snowflake-connected coding agent.
 
+## Demo mode & Railway
+
+The app auto-seeds a deterministic demo dataset (6 contracts, 12 bid lines, ~55 lifts —
+every dashboard risk status represented, dates anchored to "today") on first boot when
+`DEMO_SEED=true` (the default). A single-service Docker image (React build served by
+FastAPI) deploys to Railway in ~5 minutes — see [`DEPLOY.md`](DEPLOY.md).
+
 ## Documentation
 
 - [`docs/REPO_BRIEF.md`](docs/REPO_BRIEF.md) — domain + data dictionary

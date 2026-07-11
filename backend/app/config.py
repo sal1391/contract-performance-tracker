@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,6 +17,21 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = "postgresql+psycopg://app:app@localhost:5432/contracts"
+
+    # Demo / static serving
+    demo_seed: bool = True     # auto-seed demo data at startup when the DB is empty
+    static_dir: str = ""       # built SPA dir; empty = disabled (local dev). Docker sets /app/static.
+    read_only: bool = False    # public demo: block data-changing requests (auto-match still allowed)
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def _normalize_database_url(cls, v: object) -> object:
+        """Railway/Heroku provide postgres:// or postgresql:// — rewrite for the psycopg driver."""
+        if isinstance(v, str):
+            for prefix in ("postgres://", "postgresql://"):
+                if v.startswith(prefix):
+                    return "postgresql+psycopg://" + v[len(prefix):]
+        return v
 
     # Auth0
     auth0_enabled: bool = False
