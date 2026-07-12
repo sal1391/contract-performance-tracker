@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react'
-import { Alert, Box, Button, Stack, TextField, Typography } from '@mui/material'
+import { Alert, Box, Button, Stack, Typography } from '@mui/material'
 
-// Demo-mode-only email capture gate. Entirely separate from Auth0 — see App.tsx, which only
-// renders this when VITE_DEMO_MODE is set, before the Auth0 branch is reached at all.
+// Demo-mode-only access gate (Start button, no email). Entirely separate from Auth0 — see
+// App.tsx, which only renders this when VITE_DEMO_MODE is set, before the Auth0 branch is
+// reached at all.
 const GATE_KEY = 'demo_gate_passed'
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined
@@ -26,7 +27,6 @@ export function demoGatePassed(): boolean {
 }
 
 export default function DemoGate({ onPass }: { onPass: () => void }) {
-  const [email, setEmail] = useState('')
   const [website, setWebsite] = useState('') // honeypot — real visitors never touch this
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -40,7 +40,6 @@ export default function DemoGate({ onPass }: { onPass: () => void }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email,
           website,
           turnstile_token: window.__demoGateTurnstileToken || '',
         }),
@@ -81,23 +80,7 @@ export default function DemoGate({ onPass }: { onPass: () => void }) {
           </Typography>
           <Typography variant="h4">See the live demo</Typography>
           <Typography color="text.secondary">
-            Enter your email to unlock this read-only demo workspace. No password needed.
-          </Typography>
-
-          <TextField
-            label="Work email"
-            type="email"
-            required
-            fullWidth
-            autoFocus
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          <Typography variant="caption" color="text.secondary">
-            We only use this to prevent abuse of the demo — no marketing, no tracking.{' '}
-            <a href="/privacy">See our Privacy Notice</a>.
+            Start this read-only demo workspace. No account or password needed.
           </Typography>
 
           {/* Honeypot: off-screen for real users; bots that fill every field trip it. */}
@@ -123,8 +106,13 @@ export default function DemoGate({ onPass }: { onPass: () => void }) {
           {error && <Alert severity="error">{error}</Alert>}
 
           <Button type="submit" variant="contained" disabled={submitting}>
-            {submitting ? 'Checking…' : 'Start demo'}
+            {submitting ? 'Starting…' : 'Start'}
           </Button>
+
+          <Typography variant="caption" color="text.secondary">
+            We record your IP address to prevent abuse — no marketing, no tracking.{' '}
+            <a href="/privacy">See our Privacy Notice</a>.
+          </Typography>
         </Stack>
       </Box>
     </Box>

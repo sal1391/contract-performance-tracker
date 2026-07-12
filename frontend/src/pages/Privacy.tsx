@@ -16,47 +16,49 @@ export default function Privacy() {
           </Stack>
 
           <Typography>
-            This site hosts a set of product demos. To limit abuse, each demo asks for your email
-            address before you can start. This page explains what we do with it.
+            This site hosts a set of product demos. To limit abuse, we record basic technical
+            information when you use a demo. This page explains what.
           </Typography>
 
           <Stack spacing={1}>
             <Typography variant="h6">What we collect</Typography>
             <List sx={{ listStyleType: 'disc', pl: 3, py: 0 }}>
               <ListItem sx={{ display: 'list-item', px: 0, py: 0.5 }}>
-                The email address you enter to start a demo.
+                Your IP address and request timestamps, recorded when you start a demo, used to
+                prevent abuse (e.g. rate-limiting, blocking bad actors).
               </ListItem>
               <ListItem sx={{ display: 'list-item', px: 0, py: 0.5 }}>
                 Standard hosting/request logs generated automatically by our hosting provider
-                (Railway), such as IP address and request timestamps.
+                (Railway).
               </ListItem>
             </List>
             <Typography>
-              We do not use cookies, analytics, or third-party tracking scripts on these demo
-              pages.
+              We do not ask for your email or any account details, and we do not use cookies,
+              analytics, or third-party tracking scripts on these demo pages.
             </Typography>
           </Stack>
 
           <Stack spacing={1}>
             <Typography variant="h6">Why we collect it</Typography>
             <Typography>
-              Solely to prevent abuse and misuse of the demos (e.g. rate-limiting, blocking bad
-              actors). We do not use your email for marketing, and we do not send you any emails.
+              Solely to prevent abuse and misuse of the demos. We do not use this information for
+              marketing.
             </Typography>
           </Stack>
 
           <Stack spacing={1}>
             <Typography variant="h6">Sharing</Typography>
             <Typography>
-              We do not sell or share your email address with third parties. It is stored only
-              for the purpose described above.
+              We do not sell or share this information with third parties. It is used only for
+              the purpose described above.
             </Typography>
           </Stack>
 
           <Stack spacing={1}>
             <Typography variant="h6">Retention</Typography>
             <Typography>
-              Email addresses collected here are kept for 30 days, after which they are deleted.
+              Abuse-prevention records (IP address and timestamps) are kept for 30 days, after
+              which they are deleted.
             </Typography>
           </Stack>
 
@@ -71,9 +73,9 @@ export default function Privacy() {
           <Stack spacing={1}>
             <Typography variant="h6">Your choices</Typography>
             <Typography>
-              You can ask us to delete your email address at any time by contacting{' '}
-              <Link href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</Link>. We will remove it
-              within a reasonable time.
+              You can ask us about or request deletion of the technical records tied to your IP
+              address at any time by contacting{' '}
+              <Link href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</Link>.
             </Typography>
           </Stack>
 
