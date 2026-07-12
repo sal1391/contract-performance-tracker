@@ -95,6 +95,11 @@ export default function DemoGate({ onPass }: { onPass: () => void }) {
             onChange={(e) => setEmail(e.target.value)}
           />
 
+          <Typography variant="caption" color="text.secondary">
+            We only use this to prevent abuse of the demo — no marketing, no tracking.{' '}
+            <a href="/privacy">See our Privacy Notice</a>.
+          </Typography>
+
           {/* Honeypot: off-screen for real users; bots that fill every field trip it. */}
           <input
             type="text"

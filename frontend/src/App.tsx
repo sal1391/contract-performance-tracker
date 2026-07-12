@@ -16,6 +16,7 @@ import Mapping from './pages/Mapping'
 import RiskLines from './pages/RiskLines'
 import Workbench from './pages/Workbench'
 import { getActAs, setActAs, useApi } from './api'
+import Privacy from './pages/Privacy'
 import DemoGate, { demoGatePassed } from './ui/DemoGate'
 import { AppShell } from './ui/layout'
 
@@ -120,6 +121,9 @@ function ActAsSwitcher() {
 }
 
 export default function App() {
+  // Reachable regardless of the demo gate or Auth0 — checked before either gate below.
+  if (window.location.pathname === '/privacy') return <Privacy />
+
   const { isAuthenticated, isLoading, loginWithRedirect, logout, user } = useAuth0()
   const authConfigured = Boolean(import.meta.env.VITE_AUTH0_DOMAIN)
 
